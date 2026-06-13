@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { X, Plus, Trash2, Tag, CheckSquare, Square, StickyNote, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DEFAULT_TAG_COLORS } from "@/lib/noteCodec";
+import RichTextEditor from "@/components/RichTextEditor";
 
 export default function NotePanel() {
   const {
@@ -26,16 +27,9 @@ export default function NotePanel() {
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState(DEFAULT_TAG_COLORS[0]);
   const [showNewTagForm, setShowNewTagForm] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const note = notePanelCell ? getCellNote(notePanelCell.row, notePanelCell.col) : null;
   const hasNote = notePanelCell ? hasCellNote(notePanelCell.row, notePanelCell.col) : false;
-
-  useEffect(() => {
-    if (showNotePanel && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [showNotePanel]);
 
   if (!showNotePanel || !notePanelCell) {
     return null;
@@ -43,8 +37,8 @@ export default function NotePanel() {
 
   const cellRef = `${notePanelCell.col}${notePanelCell.row}`;
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    updateNoteContent(notePanelCell.row, notePanelCell.col, e.target.value);
+  const handleContentChange = (value: string) => {
+    updateNoteContent(notePanelCell.row, notePanelCell.col, value);
   };
 
   const handleAddTodo = (e: React.FormEvent) => {
@@ -150,13 +144,11 @@ export default function NotePanel() {
             </div>
           )}
 
-          <div className="relative">
-            <textarea
-              ref={textareaRef}
+          <div>
+            <RichTextEditor
               value={note?.content || ""}
               onChange={handleContentChange}
               placeholder="在此输入笔记内容..."
-              className="w-full h-40 p-3 border border-gray-300 rounded-md resize-none text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-excel-green/50 focus:border-excel-green"
             />
           </div>
 
