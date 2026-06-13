@@ -46,19 +46,15 @@ export default function NewsDetail() {
   const progressUpdateTimer = useRef<number | null>(null);
   const readTimer = useRef<number | null>(null);
 
-  if (!showDetail || !selectedNewsId) return null;
+  const news = selectedNewsId ? getNewsById(selectedNewsId) : null;
+  const category = news ? categories.find((c) => c.id === news.category) : null;
+  const isCurrentCategory = news ? activeSheet === news.category : false;
 
-  const news = getNewsById(selectedNewsId);
-  if (!news) return null;
-
-  const category = categories.find((c) => c.id === news.category);
-  const isCurrentCategory = activeSheet === news.category;
-
-  const isLiked = likedNews[news.id];
-  const likeCount = newsLikeCount[news.id] || 0;
-  const commentCount = newsCommentCount[news.id] || 0;
-  const showCommentInput = commentInputVisible[news.id];
-  const readStatus = getNewsReadStatus(news.id);
+  const isLiked = news ? likedNews[news.id] : false;
+  const likeCount = news ? newsLikeCount[news.id] || 0 : 0;
+  const commentCount = news ? newsCommentCount[news.id] || 0 : 0;
+  const showCommentInput = news ? commentInputVisible[news.id] : false;
+  const readStatus = news ? getNewsReadStatus(news.id) : null;
   const isRead = readStatus?.read || false;
 
   const showToast = (msg: string) => {
@@ -77,7 +73,7 @@ export default function NewsDetail() {
   }, []);
 
   useEffect(() => {
-    if (!showDetail || !selectedNewsId) return;
+    if (!showDetail || !selectedNewsId || !news) return;
     const currentNewsId = selectedNewsId;
 
     requestAnimationFrame(() => {
@@ -95,11 +91,11 @@ export default function NewsDetail() {
         readTimer.current = null;
       }
     };
-  }, [showDetail, selectedNewsId, calculateProgress, markNewsAsRead]);
+  }, [showDetail, selectedNewsId, news, calculateProgress, markNewsAsRead]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container || !selectedNewsId) return;
+    if (!container || !selectedNewsId || !news) return;
     const currentNewsId = selectedNewsId;
 
     const handleScroll = () => {
@@ -123,7 +119,7 @@ export default function NewsDetail() {
         progressUpdateTimer.current = null;
       }
     };
-  }, [showDetail, selectedNewsId, calculateProgress, updateNewsReadProgress]);
+  }, [showDetail, selectedNewsId, news, calculateProgress, updateNewsReadProgress]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -135,6 +131,8 @@ export default function NewsDetail() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [showDetail, closeNewsDetail]);
+
+  if (!showDetail || !selectedNewsId || !news) return null;
 
   const handleLike = () => {
     toggleLikeNews(news.id);
