@@ -108,14 +108,14 @@ export default function CamouflageMode() {
   }, [editingCell, editValue]);
 
   return (
-    <div className="h-full w-full overflow-auto no-transition bg-white flex">
-      <div className="flex flex-col w-[40px] flex-shrink-0 bg-[#F3F2F1] border-r border-gray-300 z-10 sticky left-0">
-        <div className="h-[25px] min-h-[25px] border-b border-gray-300 border-r border-gray-300 flex items-center justify-center sticky top-0 z-20 bg-[#F3F2F1]">
+    <div className="h-full w-full no-transition bg-white flex overflow-hidden">
+      <div className="flex flex-col w-[40px] flex-shrink-0 bg-[#F3F2F1] border-r border-gray-300">
+        <div className="h-[25px] min-h-[25px] border-b border-gray-300 border-r border-gray-300 flex items-center justify-center bg-[#F3F2F1]">
           <svg width="10" height="10" viewBox="0 0 10 10" className="text-gray-400">
             <polygon points="0,10 10,0 10,10" fill="currentColor" />
           </svg>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <div className="flex flex-col">
             {Array.from({ length: totalRows }).map((_, idx) => {
               const rowNum = idx + 1;
@@ -142,8 +142,8 @@ export default function CamouflageMode() {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 min-w-0">
-        <div className="h-[25px] min-h-[25px] bg-[#F3F2F1] flex border-b border-gray-300 flex-shrink-0 sticky top-0 z-10">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        <div className="h-[25px] min-h-[25px] bg-[#F3F2F1] flex border-b border-gray-300 flex-shrink-0">
           {colLabels.map((col) => (
             <div
               key={col}
@@ -165,7 +165,7 @@ export default function CamouflageMode() {
           <div className="flex-1 border-r border-gray-300" />
         </div>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto">
           <div className="relative" style={{ width: `${colCount * 130 + 200}px` }}>
             {Array.from({ length: totalRows }).map((_, rIdx) => {
               const rowNum = rIdx + 1;
