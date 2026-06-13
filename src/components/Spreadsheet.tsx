@@ -99,9 +99,8 @@ export default function Spreadsheet() {
 
   if (isCamouflageMode) {
     return (
-      <div className="flex-1 overflow-hidden bg-white">
+      <div className="flex-1 overflow-hidden flex flex-col bg-white">
         <CamouflageMode />
-        <NewsDetail />
       </div>
     );
   }
@@ -206,7 +205,7 @@ export default function Spreadsheet() {
                           key={cellKey}
                           onClick={() => !showOverlay && handleCellClick(rowNum, col)}
                           onDoubleClick={() => !showOverlay && handleCellDoubleClick(rowNum, col)}
-                          className={`w-[130px] min-w-[130px] h-[24px] border-r border-b border-gray-200 px-2 text-[13px] flex items-center overflow-hidden relative ${
+                          className={`w-[130px] min-w-[130px] h-[24px] border-r border-b border-gray-200 px-2 text-[13px] flex items-center ${isOverlayCorner ? 'overflow-visible' : 'overflow-hidden'} relative ${
                             isSelected && !showOverlay ? "cell-selected" : ""
                           } ${
                             !showOverlay ? "cursor-cell" : ""
@@ -254,12 +253,12 @@ export default function Spreadsheet() {
                             >
                               {(isHelpArea && col === "B" && rowNum === 1) ||
                               (isFullHelpArea && col === "B" && rowNum === 1) ? (
-                                <div className="h-full w-full border-r border-gray-300 overflow-hidden bg-white">
+                                <div className="h-full w-full border-r border-gray-300 bg-white">
                                   <HelpPanel />
                                 </div>
                               ) : null}
                               {isNewsArea && col === newsStartCol && rowNum === 1 ? (
-                                <div className="h-full w-full overflow-hidden bg-white">
+                                <div className="h-full w-full bg-white">
                                   <NewsList />
                                 </div>
                               ) : null}

@@ -108,7 +108,7 @@ export default function CamouflageMode() {
   }, [editingCell, editValue]);
 
   return (
-    <div className="h-full w-full no-transition bg-white flex overflow-hidden">
+    <div className="flex-1 w-full no-transition bg-white flex overflow-hidden min-h-0">
       <div className="flex flex-col w-[40px] flex-shrink-0 bg-[#F3F2F1] border-r border-gray-300">
         <div className="h-[25px] min-h-[25px] border-b border-gray-300 border-r border-gray-300 flex items-center justify-center bg-[#F3F2F1]">
           <svg width="10" height="10" viewBox="0 0 10 10" className="text-gray-400">
