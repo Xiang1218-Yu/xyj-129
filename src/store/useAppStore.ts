@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import { AppState, CellNote, NoteTag, TodoItem } from "@/types";
+import { AppState, CellNote, NoteTag, CamouflageMode } from "@/types";
 import { categories, getNextCategory, getPrevCategory } from "@/data/categories";
 import { newsData } from "@/data/newsData";
+import { workTaskTemplates, getWorkTemplateById } from "@/data/camouflageData";
 import {
   encodeNoteToFormula,
   decodeNoteFromFormula,
@@ -15,6 +16,13 @@ import {
 interface AppStore extends AppState {
   setActiveSheet: (sheet: string) => void;
   toggleCamouflageMode: () => void;
+  setCamouflageMode: (mode: CamouflageMode) => void;
+  setActiveWorkTemplateId: (id: string) => void;
+  setWorkTemplateCellValue: (templateId: string, row: number, col: string, value: string) => void;
+  getWorkTemplateCellValue: (templateId: string, row: number, col: string) => string;
+  toggleTemplateSelector: () => void;
+  setShowTemplateSelector: (show: boolean) => void;
+  saveWorkTemplate: () => void;
   setShowDetail: (show: boolean) => void;
   setSelectedNewsId: (id: number | null) => void;
   setSelectedCell: (cell: { row: number; col: string } | null) => void;
@@ -54,7 +62,19 @@ newsData.forEach((n) => {
   initCommentCount[n.id] = Math.floor(n.hot / 5000);
 });
 
-export const useAppStore = create<AppStore>((set, get) => ({
+export const useAppStore = create<AppStore>((set, get) => {
+  let savedTemplateId = workTaskTemplates[0]?.id || "daily-task";
+  let savedWorkCellValues: Record<string, Record<string, string>> = {};
+  try {
+    const tplId = localStorage.getItem("activeWorkTemplateId");
+    if (tplId) savedTemplateId = tplId;
+    const saved = localStorage.getItem("workTemplateCellValues");
+    if (saved) savedWorkCellValues = JSON.parse(saved);
+  } catch (e) {
+    console.warn("读取缓存失败:", e);
+  }
+
+  return {
   activeSheet: "tech",
   isCamouflageMode: false,
   showDetail: false,
@@ -70,6 +90,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   showNotePanel: false,
   notePanelCell: null,
   allTags: [...PRESET_TAGS],
+  camouflageMode: "finance",
+  activeWorkTemplateId: savedTemplateId,
+  workTemplateCellValues: savedWorkCellValues,
+  showTemplateSelector: false,
 
   setActiveSheet: (sheet) => {
     set({ activeSheet: sheet, showDetail: false, selectedNewsId: null });
@@ -77,15 +101,77 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   toggleCamouflageMode: () => {
     const next = !get().isCamouflageMode;
+    const mode = get().camouflageMode;
+    const workTpl = getWorkTemplateById(get().activeWorkTemplateId);
     set({
       isCamouflageMode: next,
       showDetail: false,
       selectedNewsId: null,
     });
     if (typeof document !== "undefined") {
+      const defaultTitle = "年度财务报表.xlsx - Excel";
+      const workTitle = workTpl ? `${workTpl.name}.xlsx - Excel` : defaultTitle;
       document.title = next
-        ? "年度财务报表.xlsx - Excel"
-        : "年度财务报表.xlsx - Excel";
+        ? (mode === "workTask" ? workTitle : defaultTitle)
+        : defaultTitle;
+    }
+  },
+
+  setCamouflageMode: (mode) => {
+    set({ camouflageMode: mode });
+    const workTpl = getWorkTemplateById(get().activeWorkTemplateId);
+    if (typeof document !== "undefined" && get().isCamouflageMode) {
+      const defaultTitle = "年度财务报表.xlsx - Excel";
+      const workTitle = workTpl ? `${workTpl.name}.xlsx - Excel` : defaultTitle;
+      document.title = mode === "workTask" ? workTitle : defaultTitle;
+    }
+  },
+
+  setActiveWorkTemplateId: (id) => {
+    const tpl = getWorkTemplateById(id);
+    set({ activeWorkTemplateId: id });
+    if (typeof document !== "undefined" && get().isCamouflageMode && tpl) {
+      document.title = `${tpl.name}.xlsx - Excel`;
+    }
+  },
+
+  setWorkTemplateCellValue: (templateId, row, col, value) => {
+    const key = `${col}${row}`;
+    set((state) => {
+      const tplValues = state.workTemplateCellValues[templateId] || {};
+      return {
+        workTemplateCellValues: {
+          ...state.workTemplateCellValues,
+          [templateId]: { ...tplValues, [key]: value },
+        },
+      };
+    });
+  },
+
+  getWorkTemplateCellValue: (templateId, row, col) => {
+    const key = `${col}${row}`;
+    const tplValues = get().workTemplateCellValues[templateId] || {};
+    return tplValues[key] || "";
+  },
+
+  toggleTemplateSelector: () => {
+    set((state) => ({ showTemplateSelector: !state.showTemplateSelector }));
+  },
+
+  setShowTemplateSelector: (show) => {
+    set({ showTemplateSelector: show });
+  },
+
+  saveWorkTemplate: () => {
+    const { workTemplateCellValues, activeWorkTemplateId } = get();
+    try {
+      localStorage.setItem(
+        "workTemplateCellValues",
+        JSON.stringify(workTemplateCellValues)
+      );
+      localStorage.setItem("activeWorkTemplateId", activeWorkTemplateId);
+    } catch (e) {
+      console.warn("保存失败:", e);
     }
   },
 
@@ -193,7 +279,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   toggleNotePanel: () => {
-    const { showNotePanel, notePanelCell, selectedCell } = get();
+    const { showNotePanel, selectedCell } = get();
     if (showNotePanel) {
       set({ showNotePanel: false, notePanelCell: null });
     } else if (selectedCell) {
@@ -357,4 +443,5 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!note) return 0;
     return note.todos.filter((t) => !t.completed).length;
   },
-}));
+  };
+});

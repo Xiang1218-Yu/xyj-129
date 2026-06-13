@@ -28,6 +28,10 @@ export interface AppState extends NotesState {
   newsLikeCount: Record<number, number>;
   newsCommentCount: Record<number, number>;
   commentInputVisible: Record<number, boolean>;
+  camouflageMode: CamouflageMode;
+  activeWorkTemplateId: string;
+  workTemplateCellValues: Record<string, Record<string, string>>;
+  showTemplateSelector: boolean;
 }
 
 export interface CamouflageRow {
@@ -40,6 +44,32 @@ export interface CamouflageRow {
   F: string | number;
   G: string | number;
   H: string | number;
+}
+
+export interface CamouflageTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rows: CamouflageRow[];
+  formulaRows?: { [key: string]: string }[];
+  titleRow?: number;
+  headerRow?: number;
+  summaryRow?: number;
+  highlightColumns?: string[];
+  colCount?: number;
+  totalRows?: number;
+}
+
+export type CamouflageMode = "finance" | "workTask";
+
+export interface WorkTaskTemplate {
+  id: string;
+  name: string;
+  rows: CamouflageRow[];
+  formulaRows?: { [key: string]: string }[];
+  colCount?: number;
+  totalRows?: number;
 }
 
 export interface ShortcutItem {

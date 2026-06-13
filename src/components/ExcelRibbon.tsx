@@ -46,14 +46,39 @@ import {
   LayoutGrid,
   Columns,
   AlignVerticalSpaceBetween,
+  ListTodo,
+  FolderKanban,
+  CalendarDays,
+  Bug,
+  FileSpreadsheet,
+  Sparkles,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { workTaskTemplates } from "@/data/camouflageData";
 
 const tabs = ["文件", "开始", "插入", "页面布局", "公式", "数据", "审阅", "视图"];
 
+const templateIcons: Record<string, typeof FileSpreadsheet> = {
+  "daily-task": ListTodo,
+  "project-progress": FolderKanban,
+  "weekly-plan": CalendarDays,
+  "defect-track": Bug,
+  "meeting-todo": MessageSquareText,
+};
+
 export default function ExcelRibbon() {
   const [activeTab, setActiveTab] = useState("开始");
-  const { toggleNotePanel, selectedCell } = useAppStore();
+  const {
+    toggleNotePanel,
+    selectedCell,
+    camouflageMode,
+    setCamouflageMode,
+    isCamouflageMode,
+    toggleCamouflageMode,
+    activeWorkTemplateId,
+    setActiveWorkTemplateId,
+    toggleTemplateSelector,
+  } = useAppStore();
 
   return (
     <div className="flex flex-col no-select" style={{ height: "138px" }}>
@@ -290,12 +315,26 @@ export default function ExcelRibbon() {
 
       {activeTab === "视图" && (
         <div className="flex-1 bg-white border-b border-gray-200 px-2 py-1 flex items-start gap-1 overflow-x-auto">
-          <div className="flex flex-col items-center px-2 h-full">
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
             <div className="text-[11px] text-gray-500 mb-1">工作簿视图</div>
             <div className="flex gap-1">
-              <div className="ribbon-btn bg-blue-50">
-                <Eye size={22} className="text-excel-green" />
-                <span className="text-[11px] mt-0.5">普通</span>
+              <div
+                className={`ribbon-btn ${
+                  !isCamouflageMode ? "bg-blue-50" : ""
+                } cursor-pointer`}
+                onClick={() => isCamouflageMode && toggleCamouflageMode()}
+              >
+                <Eye size={22} className={!isCamouflageMode ? "text-excel-green" : "text-gray-600"} />
+                <span className="text-[11px] mt-0.5">普通视图</span>
+              </div>
+              <div
+                className={`ribbon-btn ${
+                  isCamouflageMode ? "bg-blue-50" : ""
+                } cursor-pointer`}
+                onClick={() => !isCamouflageMode && toggleCamouflageMode()}
+              >
+                <Sparkles size={22} className={isCamouflageMode ? "text-excel-green" : "text-gray-600"} />
+                <span className="text-[11px] mt-0.5">伪装模式</span>
               </div>
               <div className="ribbon-btn">
                 <Printer size={22} className="text-gray-600" />
@@ -307,6 +346,68 @@ export default function ExcelRibbon() {
               </div>
             </div>
           </div>
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">伪装场景</div>
+            <div className="flex gap-1">
+              <button
+                className={`ribbon-btn ${
+                  camouflageMode === "finance" ? "bg-green-50" : ""
+                } cursor-pointer`}
+                onClick={() => {
+                  setCamouflageMode("finance");
+                  if (!isCamouflageMode) toggleCamouflageMode();
+                }}
+              >
+                <BarChart3 size={22} className={camouflageMode === "finance" ? "text-excel-green" : "text-gray-600"} />
+                <span className="text-[11px] mt-0.5">财务报表</span>
+              </button>
+              <button
+                className={`ribbon-btn ${
+                  camouflageMode === "workTask" ? "bg-blue-50" : ""
+                } cursor-pointer`}
+                onClick={() => {
+                  setCamouflageMode("workTask");
+                  if (!isCamouflageMode) toggleCamouflageMode();
+                  if (camouflageMode === "workTask") toggleTemplateSelector();
+                }}
+              >
+                <ListTodo size={22} className={camouflageMode === "workTask" ? "text-blue-600" : "text-gray-600"} />
+                <span className="text-[11px] mt-0.5">工作任务</span>
+              </button>
+            </div>
+          </div>
+          {camouflageMode === "workTask" && (
+            <div className="flex flex-col items-center px-2 h-full">
+              <div className="text-[11px] text-gray-500 mb-1">任务模板</div>
+              <div className="flex gap-1 flex-wrap max-w-[340px]">
+                {workTaskTemplates.map((tpl) => {
+                  const IconComp = templateIcons[tpl.id] || FileSpreadsheet;
+                  const isActive = tpl.id === activeWorkTemplateId;
+                  return (
+                    <button
+                      key={tpl.id}
+                      className={`ribbon-btn !py-1 !px-2 !min-w-0 ${
+                        isActive ? "bg-blue-50" : ""
+                      } cursor-pointer`}
+                      onClick={() => {
+                        setActiveWorkTemplateId(tpl.id);
+                        if (!isCamouflageMode) toggleCamouflageMode();
+                      }}
+                      title={tpl.name}
+                    >
+                      <IconComp
+                        size={18}
+                        className={isActive ? "text-blue-600" : "text-gray-600"}
+                      />
+                      <span className="text-[11px] mt-0.5 max-w-[64px] truncate">
+                        {tpl.name.replace(/表$/, "")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
