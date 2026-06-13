@@ -47,11 +47,13 @@ import {
   Columns,
   AlignVerticalSpaceBetween,
 } from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
 
 const tabs = ["文件", "开始", "插入", "页面布局", "公式", "数据", "审阅", "视图"];
 
 export default function ExcelRibbon() {
   const [activeTab, setActiveTab] = useState("开始");
+  const { toggleNotePanel, selectedCell } = useAppStore();
 
   return (
     <div className="flex flex-col no-select" style={{ height: "138px" }}>
@@ -395,14 +397,14 @@ export default function ExcelRibbon() {
           <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
             <div className="text-[11px] text-gray-500 mb-1">批注</div>
             <div className="flex gap-1">
-              <div className="ribbon-btn">
+              <button className="ribbon-btn" onClick={toggleNotePanel} disabled={!selectedCell}>
                 <StickyNote size={22} className="text-yellow-500" />
                 <span className="text-[11px] mt-0.5">新建批注</span>
-              </div>
-              <div className="ribbon-btn">
+              </button>
+              <button className="ribbon-btn" onClick={toggleNotePanel} disabled={!selectedCell}>
                 <PencilLine size={22} className="text-blue-500" />
                 <span className="text-[11px] mt-0.5">编辑批注</span>
-              </div>
+              </button>
               <div className="ribbon-btn">
                 <Eraser size={22} className="text-red-500" />
                 <span className="text-[11px] mt-0.5">删除批注</span>

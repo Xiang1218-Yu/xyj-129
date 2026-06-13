@@ -16,7 +16,7 @@ export interface Category {
   order: number;
 }
 
-export interface AppState {
+export interface AppState extends NotesState {
   activeSheet: string;
   isCamouflageMode: boolean;
   showDetail: boolean;
@@ -50,4 +50,32 @@ export interface ShortcutItem {
 export interface HelpSection {
   title: string;
   items: ShortcutItem[];
+}
+
+export interface NoteTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface TodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: number;
+}
+
+export interface CellNote {
+  content: string;
+  tags: NoteTag[];
+  todos: TodoItem[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface NotesState {
+  notes: Record<string, CellNote>;
+  showNotePanel: boolean;
+  notePanelCell: { row: number; col: string } | null;
+  allTags: NoteTag[];
 }

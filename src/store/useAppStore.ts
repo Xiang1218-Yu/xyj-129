@@ -1,7 +1,16 @@
 import { create } from "zustand";
-import { AppState } from "@/types";
+import { AppState, CellNote, NoteTag, TodoItem } from "@/types";
 import { categories, getNextCategory, getPrevCategory } from "@/data/categories";
 import { newsData } from "@/data/newsData";
+import {
+  encodeNoteToFormula,
+  decodeNoteFromFormula,
+  getNoteCellKey,
+  createEmptyNote,
+  createTag,
+  createTodo,
+  PRESET_TAGS,
+} from "@/lib/noteCodec";
 
 interface AppStore extends AppState {
   setActiveSheet: (sheet: string) => void;
@@ -20,6 +29,22 @@ interface AppStore extends AppState {
   goToSheetIndex: (index: number) => void;
   openNewsDetail: (newsId: number) => void;
   closeNewsDetail: () => void;
+  toggleNotePanel: () => void;
+  openNotePanel: (row: number, col: string) => void;
+  closeNotePanel: () => void;
+  getCellNote: (row: number, col: string) => CellNote | null;
+  setCellNote: (row: number, col: string, note: CellNote) => void;
+  updateNoteContent: (row: number, col: string, content: string) => void;
+  addNoteTag: (row: number, col: string, tag: NoteTag) => void;
+  removeNoteTag: (row: number, col: string, tagId: string) => void;
+  addTodo: (row: number, col: string, text: string) => void;
+  toggleTodo: (row: number, col: string, todoId: string) => void;
+  removeTodo: (row: number, col: string, todoId: string) => void;
+  addGlobalTag: (name: string, color: string) => void;
+  removeGlobalTag: (tagId: string) => void;
+  deleteCellNote: (row: number, col: string) => void;
+  hasCellNote: (row: number, col: string) => boolean;
+  getPendingTodosCount: (row: number, col: string) => number;
 }
 
 const initLikeCount: Record<number, number> = {};
@@ -41,6 +66,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   newsLikeCount: initLikeCount,
   newsCommentCount: initCommentCount,
   commentInputVisible: {},
+  notes: {},
+  showNotePanel: false,
+  notePanelCell: null,
+  allTags: [...PRESET_TAGS],
 
   setActiveSheet: (sheet) => {
     set({ activeSheet: sheet, showDetail: false, selectedNewsId: null });
@@ -161,5 +190,171 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   closeNewsDetail: () => {
     set({ showDetail: false, selectedNewsId: null });
+  },
+
+  toggleNotePanel: () => {
+    const { showNotePanel, notePanelCell, selectedCell } = get();
+    if (showNotePanel) {
+      set({ showNotePanel: false, notePanelCell: null });
+    } else if (selectedCell) {
+      set({ showNotePanel: true, notePanelCell: { ...selectedCell } });
+    }
+  },
+
+  openNotePanel: (row, col) => {
+    set({ showNotePanel: true, notePanelCell: { row, col } });
+  },
+
+  closeNotePanel: () => {
+    set({ showNotePanel: false, notePanelCell: null });
+  },
+
+  getCellNote: (row, col) => {
+    const key = getNoteCellKey(row, col);
+    const { notes, cellValues } = get();
+
+    if (notes[key]) {
+      return notes[key];
+    }
+
+    const cellValue = cellValues[key];
+    if (cellValue) {
+      const decoded = decodeNoteFromFormula(cellValue);
+      if (decoded) {
+        return decoded;
+      }
+    }
+
+    return null;
+  },
+
+  setCellNote: (row, col, note) => {
+    const key = getNoteCellKey(row, col);
+    const formula = encodeNoteToFormula(note);
+
+    set((state) => ({
+      notes: { ...state.notes, [key]: note },
+      cellValues: { ...state.cellValues, [key]: formula },
+    }));
+
+    const { selectedCell, notePanelCell } = get();
+    if ((selectedCell && selectedCell.row === row && selectedCell.col === col) ||
+        (notePanelCell && notePanelCell.row === row && notePanelCell.col === col)) {
+      set({ formulaBarValue: formula });
+    }
+  },
+
+  updateNoteContent: (row, col, content) => {
+    const { getCellNote, setCellNote } = get();
+    const existing = getCellNote(row, col);
+    const note = existing || createEmptyNote();
+    const updated: CellNote = {
+      ...note,
+      content,
+      updatedAt: Date.now(),
+    };
+    setCellNote(row, col, updated);
+  },
+
+  addNoteTag: (row, col, tag) => {
+    const { getCellNote, setCellNote } = get();
+    const existing = getCellNote(row, col);
+    const note = existing || createEmptyNote();
+    if (note.tags.some((t) => t.id === tag.id)) return;
+    const updated: CellNote = {
+      ...note,
+      tags: [...note.tags, tag],
+      updatedAt: Date.now(),
+    };
+    setCellNote(row, col, updated);
+  },
+
+  removeNoteTag: (row, col, tagId) => {
+    const { getCellNote, setCellNote } = get();
+    const note = getCellNote(row, col);
+    if (!note) return;
+    const updated: CellNote = {
+      ...note,
+      tags: note.tags.filter((t) => t.id !== tagId),
+      updatedAt: Date.now(),
+    };
+    setCellNote(row, col, updated);
+  },
+
+  addTodo: (row, col, text) => {
+    const { getCellNote, setCellNote } = get();
+    const existing = getCellNote(row, col);
+    const note = existing || createEmptyNote();
+    const newTodo = createTodo(text);
+    const updated: CellNote = {
+      ...note,
+      todos: [...note.todos, newTodo],
+      updatedAt: Date.now(),
+    };
+    setCellNote(row, col, updated);
+  },
+
+  toggleTodo: (row, col, todoId) => {
+    const { getCellNote, setCellNote } = get();
+    const note = getCellNote(row, col);
+    if (!note) return;
+    const updated: CellNote = {
+      ...note,
+      todos: note.todos.map((t) =>
+        t.id === todoId ? { ...t, completed: !t.completed } : t
+      ),
+      updatedAt: Date.now(),
+    };
+    setCellNote(row, col, updated);
+  },
+
+  removeTodo: (row, col, todoId) => {
+    const { getCellNote, setCellNote } = get();
+    const note = getCellNote(row, col);
+    if (!note) return;
+    const updated: CellNote = {
+      ...note,
+      todos: note.todos.filter((t) => t.id !== todoId),
+      updatedAt: Date.now(),
+    };
+    setCellNote(row, col, updated);
+  },
+
+  addGlobalTag: (name, color) => {
+    const newTag = createTag(name, color);
+    set((state) => ({
+      allTags: [...state.allTags, newTag],
+    }));
+  },
+
+  removeGlobalTag: (tagId) => {
+    set((state) => ({
+      allTags: state.allTags.filter((t) => t.id !== tagId),
+    }));
+  },
+
+  deleteCellNote: (row, col) => {
+    const key = getNoteCellKey(row, col);
+    set((state) => {
+      const newNotes = { ...state.notes };
+      delete newNotes[key];
+      const newCellValues = { ...state.cellValues };
+      delete newCellValues[key];
+      return { notes: newNotes, cellValues: newCellValues };
+    });
+  },
+
+  hasCellNote: (row, col) => {
+    const key = getNoteCellKey(row, col);
+    const { notes, cellValues } = get();
+    if (notes[key]) return true;
+    const cv = cellValues[key];
+    return !!(cv && decodeNoteFromFormula(cv));
+  },
+
+  getPendingTodosCount: (row, col) => {
+    const note = get().getCellNote(row, col);
+    if (!note) return 0;
+    return note.todos.filter((t) => !t.completed).length;
   },
 }));

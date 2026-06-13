@@ -10,6 +10,9 @@ export function useHotkeys() {
     closeNewsDetail,
     showDetail,
     isCamouflageMode,
+    toggleNotePanel,
+    showNotePanel,
+    closeNotePanel,
   } = useAppStore();
 
   useEffect(() => {
@@ -18,13 +21,22 @@ export function useHotkeys() {
       const ctrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
 
       if (e.key === "Escape") {
-        if (showDetail) {
+        if (showNotePanel) {
+          e.preventDefault();
+          closeNotePanel();
+        } else if (showDetail) {
           e.preventDefault();
           closeNewsDetail();
         } else if (isCamouflageMode) {
           e.preventDefault();
           toggleCamouflageMode();
         }
+        return;
+      }
+
+      if (ctrlOrCmd && e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        toggleNotePanel();
         return;
       }
 
@@ -70,5 +82,8 @@ export function useHotkeys() {
     closeNewsDetail,
     showDetail,
     isCamouflageMode,
+    toggleNotePanel,
+    showNotePanel,
+    closeNotePanel,
   ]);
 }

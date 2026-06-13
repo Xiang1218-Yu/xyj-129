@@ -6,10 +6,22 @@ const helpSections: HelpSection[] = [
     title: "快捷键操作",
     items: [
       { keys: "Ctrl/⌘ + H", description: "切换伪装/编辑模式（老板键）" },
+      { keys: "Ctrl/⌘ + Shift + N", description: "打开/关闭单元格笔记面板" },
       { keys: "Ctrl/⌘ + →", description: "切换到下一个资讯分类" },
       { keys: "Ctrl/⌘ + ←", description: "切换到上一个资讯分类" },
       { keys: "Ctrl/⌘ + 1~6", description: "快速跳转到第N个分类标签" },
-      { keys: "Esc", description: "关闭详情页 / 退出伪装模式" },
+      { keys: "Esc", description: "关闭弹窗 / 退出伪装模式" },
+    ],
+  },
+  {
+    title: "笔记功能",
+    items: [
+      { keys: "1", description: "右键点击单元格，选择「添加/编辑笔记」" },
+      { keys: "2", description: "或使用快捷键 Ctrl/⌘ + Shift + N 打开笔记面板" },
+      { keys: "3", description: "也可点击审阅选项卡的「新建批注」按钮" },
+      { keys: "4", description: "笔记内容会自动伪装成 Excel 公式保存在单元格中" },
+      { keys: "5", description: "可添加多个标签对待办事项进行分类标记" },
+      { keys: "6", description: "支持待办清单，可勾选标记完成状态" },
     ],
   },
   {

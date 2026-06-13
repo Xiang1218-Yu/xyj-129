@@ -4,6 +4,7 @@ import HelpPanel from "@/components/HelpPanel";
 import NewsList from "@/components/NewsList";
 import CamouflageMode from "@/components/CamouflageMode";
 import NewsDetail from "@/components/NewsDetail";
+import NotePanel from "@/components/NotePanel";
 
 export default function Spreadsheet() {
   const {
@@ -14,11 +15,22 @@ export default function Spreadsheet() {
     cellValues,
     setCellValue,
     setFormulaBarValue,
+    hasCellNote,
+    getCellNote,
+    openNotePanel,
+    getPendingTodosCount,
   } = useAppStore();
 
   const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
   const [editValue, setEditValue] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    row: number;
+    col: string;
+  } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const colCount = 20;
   const rowCount = 80;
@@ -56,6 +68,31 @@ export default function Spreadsheet() {
   const handleCellDoubleClick = (row: number, col: string) => {
     handleCellClick(row, col);
   };
+
+  const handleCellContextMenu = (e: React.MouseEvent, row: number, col: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, row, col });
+  };
+
+  const handleOpenNote = () => {
+    if (contextMenu) {
+      openNotePanel(contextMenu.row, contextMenu.col);
+      setContextMenu(null);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    if (contextMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [contextMenu]);
 
   const finishEditing = (save = true) => {
     if (editingCell && save) {
@@ -200,11 +237,16 @@ export default function Spreadsheet() {
                         (isNewsArea && col === newsStartCol && rowNum === 1) ||
                         (isFullHelpArea && col === "B" && rowNum === 1);
 
+                      const hasNote = !showOverlay && hasCellNote(rowNum, col);
+                      const pendingTodos = !showOverlay ? getPendingTodosCount(rowNum, col) : 0;
+                      const noteData = !showOverlay ? getCellNote(rowNum, col) : null;
+
                       return (
                         <div
                           key={cellKey}
                           onClick={() => !showOverlay && handleCellClick(rowNum, col)}
                           onDoubleClick={() => !showOverlay && handleCellDoubleClick(rowNum, col)}
+                          onContextMenu={(e) => !showOverlay && handleCellContextMenu(e, rowNum, col)}
                           className={`w-[130px] min-w-[130px] h-[24px] border-r border-b border-gray-200 px-2 text-[13px] flex items-center ${isOverlayCorner ? 'overflow-visible' : 'overflow-hidden'} relative ${
                             isSelected && !showOverlay ? "cell-selected" : ""
                           } ${
@@ -232,6 +274,28 @@ export default function Spreadsheet() {
                             <span className="truncate whitespace-nowrap text-gray-800">
                               {value}
                             </span>
+                          )}
+
+                          {hasNote && (
+                            <>
+                              <div className="absolute top-0 right-0 w-0 h-0 border-t-[6px] border-r-[6px] border-t-transparent border-r-red-500" />
+                              {noteData?.tags && noteData.tags.length > 0 && (
+                                <div className="absolute bottom-0 left-0 right-0 h-[3px] flex">
+                                  {noteData.tags.slice(0, 5).map((tag, idx) => (
+                                    <div
+                                      key={tag.id}
+                                      className="flex-1 h-full"
+                                      style={{ backgroundColor: tag.color }}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                              {pendingTodos > 0 && (
+                                <div className="absolute top-0.5 left-0.5 bg-excel-green text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                  {pendingTodos > 9 ? "9+" : pendingTodos}
+                                </div>
+                              )}
+                            </>
                           )}
 
                           {isOverlayCorner && (
@@ -277,6 +341,31 @@ export default function Spreadsheet() {
       </div>
 
       <NewsDetail />
+
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed z-50 bg-white border border-gray-300 rounded-md shadow-lg py-1 min-w-[160px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            onClick={handleOpenNote}
+            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            <span className="text-excel-green">📝</span>
+            添加/编辑笔记
+          </button>
+          <div className="border-t border-gray-200 my-1" />
+          <button
+            onClick={() => setContextMenu(null)}
+            className="w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-100"
+          >
+            取消
+          </button>
+        </div>
+      )}
+
+      <NotePanel />
     </div>
   );
 }
