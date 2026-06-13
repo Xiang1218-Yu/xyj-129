@@ -42,18 +42,19 @@ export default function Spreadsheet() {
   const getCellKey = (row: number, col: string) => `${col}${row}`;
 
   const handleCellClick = (row: number, col: string) => {
-    if (editingCell && (editingCell.row !== row || editingCell.col !== col)) {
+    if (editingCell) {
+      if (editingCell.row === row && editingCell.col === col) return;
       setCellValue(editingCell.row, editingCell.col, editValue);
-      setEditingCell(null);
     }
+    const val = cellValues[getCellKey(row, col)] || "";
     setSelectedCell({ row, col });
-    setFormulaBarValue(cellValues[getCellKey(row, col)] || "");
+    setFormulaBarValue(val);
+    setEditingCell({ row, col });
+    setEditValue(val);
   };
 
   const handleCellDoubleClick = (row: number, col: string) => {
-    setSelectedCell({ row, col });
-    setEditingCell({ row, col });
-    setEditValue(cellValues[getCellKey(row, col)] || "");
+    handleCellClick(row, col);
   };
 
   const finishEditing = (save = true) => {
@@ -156,7 +157,7 @@ export default function Spreadsheet() {
                     col,
                   })
                 }
-                className={`w-[110px] min-w-[110px] border-r border-gray-300 flex items-center justify-center text-[12px] cursor-default ${
+                className={`w-[130px] min-w-[130px] border-r border-gray-300 flex items-center justify-center text-[12px] cursor-default ${
                   selectedCell?.col === col
                     ? "bg-excel-green text-white font-semibold"
                     : "text-gray-700 font-medium hover:bg-gray-200"
@@ -169,7 +170,7 @@ export default function Spreadsheet() {
           </div>
 
           <div className="flex-1 overflow-auto relative">
-            <div className="relative" style={{ width: `${colCount * 110 + 200}px` }}>
+            <div className="relative" style={{ width: `${colCount * 130 + 200}px` }}>
               {Array.from({ length: rowCount }).map((_, rIdx) => {
                 const rowNum = rIdx + 1;
                 return (
@@ -205,7 +206,7 @@ export default function Spreadsheet() {
                           key={cellKey}
                           onClick={() => !showOverlay && handleCellClick(rowNum, col)}
                           onDoubleClick={() => !showOverlay && handleCellDoubleClick(rowNum, col)}
-                          className={`w-[110px] min-w-[110px] h-[24px] border-r border-b border-gray-200 px-1 text-[13px] flex items-center overflow-hidden relative ${
+                          className={`w-[130px] min-w-[130px] h-[24px] border-r border-b border-gray-200 px-2 text-[13px] flex items-center overflow-hidden relative ${
                             isSelected && !showOverlay ? "cell-selected" : ""
                           } ${
                             !showOverlay ? "cursor-cell" : ""
@@ -242,10 +243,10 @@ export default function Spreadsheet() {
                                 top: 0,
                                 width:
                                   isFullHelpArea
-                                    ? `${colCount * 110}px`
+                                    ? `${colCount * 130}px`
                                     : isHelpArea
-                                    ? `${4 * 110}px`
-                                    : `${(colCount - colLabels.indexOf(newsStartCol!)) * 110}px`,
+                                    ? `${4 * 130}px`
+                                    : `${(colCount - colLabels.indexOf(newsStartCol!)) * 130}px`,
                                 height: isFullHelpArea ? "1680px" : isHelpArea ? "1200px" : "1440px",
                                 zIndex: 5,
                               }}
