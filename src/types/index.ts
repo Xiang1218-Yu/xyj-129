@@ -16,6 +16,12 @@ export interface Category {
   order: number;
 }
 
+export interface NewsReadStatus {
+  read: boolean;
+  readAt: number;
+  progress: number;
+}
+
 export interface AppState extends NotesState {
   activeSheet: string;
   isCamouflageMode: boolean;
@@ -32,6 +38,7 @@ export interface AppState extends NotesState {
   activeWorkTemplateId: string;
   workTemplateCellValues: Record<string, Record<string, string>>;
   showTemplateSelector: boolean;
+  newsReadStatus: Record<number, NewsReadStatus>;
 }
 
 export interface CamouflageRow {

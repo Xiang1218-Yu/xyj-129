@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   X,
@@ -12,6 +12,8 @@ import {
   MessageSquare,
   Send,
   Check,
+  Eye,
+  RefreshCw,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { getNewsById } from "@/data/newsData";
@@ -30,11 +32,19 @@ export default function NewsDetail() {
     toggleLikeNews,
     toggleCommentInput,
     addComment,
+    markNewsAsRead,
+    markNewsAsUnread,
+    updateNewsReadProgress,
+    getNewsReadStatus,
   } = useAppStore();
 
   const [commentText, setCommentText] = useState("");
   const [bookmarked, setBookmarked] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const progressUpdateTimer = useRef<number | null>(null);
+  const readTimer = useRef<number | null>(null);
 
   if (!showDetail || !selectedNewsId) return null;
 
@@ -48,11 +58,83 @@ export default function NewsDetail() {
   const likeCount = newsLikeCount[news.id] || 0;
   const commentCount = newsCommentCount[news.id] || 0;
   const showCommentInput = commentInputVisible[news.id];
+  const readStatus = getNewsReadStatus(news.id);
+  const isRead = readStatus?.read || false;
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 1800);
   };
+
+  const calculateProgress = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return 0;
+    const scrollTop = container.scrollTop;
+    const scrollHeight = container.scrollHeight - container.clientHeight;
+    if (scrollHeight <= 0) return 100;
+    const progress = (scrollTop / scrollHeight) * 100;
+    return Math.max(0, Math.min(100, progress));
+  }, []);
+
+  useEffect(() => {
+    if (!showDetail || !selectedNewsId) return;
+    const currentNewsId = selectedNewsId;
+
+    requestAnimationFrame(() => {
+      const p = calculateProgress();
+      setReadingProgress(p);
+    });
+
+    readTimer.current = window.setTimeout(() => {
+      markNewsAsRead(currentNewsId);
+    }, 3000);
+
+    return () => {
+      if (readTimer.current) {
+        clearTimeout(readTimer.current);
+        readTimer.current = null;
+      }
+    };
+  }, [showDetail, selectedNewsId, calculateProgress, markNewsAsRead]);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !selectedNewsId) return;
+    const currentNewsId = selectedNewsId;
+
+    const handleScroll = () => {
+      const p = calculateProgress();
+      setReadingProgress(p);
+
+      if (progressUpdateTimer.current) {
+        clearTimeout(progressUpdateTimer.current);
+      }
+      progressUpdateTimer.current = window.setTimeout(() => {
+        updateNewsReadProgress(currentNewsId, p);
+      }, 150);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      if (progressUpdateTimer.current) {
+        clearTimeout(progressUpdateTimer.current);
+        progressUpdateTimer.current = null;
+      }
+    };
+  }, [showDetail, selectedNewsId, calculateProgress, updateNewsReadProgress]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (!showDetail) return;
+      if (e.key === "Escape") {
+        closeNewsDetail();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [showDetail, closeNewsDetail]);
 
   const handleLike = () => {
     toggleLikeNews(news.id);
@@ -88,6 +170,40 @@ export default function NewsDetail() {
     }
   };
 
+  const handleToggleReadStatus = () => {
+    if (isRead) {
+      markNewsAsUnread(news.id);
+      updateNewsReadProgress(news.id, 0);
+      setReadingProgress(0);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+      showToast("已标记为未读");
+    } else {
+      markNewsAsRead(news.id);
+      showToast("已标记为已读");
+    }
+  };
+
+  const progressColor =
+    readingProgress >= 100
+      ? "bg-green-500"
+      : readingProgress >= 60
+      ? "bg-excel-green"
+      : readingProgress >= 30
+      ? "bg-yellow-500"
+      : "bg-blue-500";
+
+  const formatReadAt = (ts: number) => {
+    const d = new Date(ts);
+    const now = new Date();
+    const diff = now.getTime() - ts;
+    if (diff < 60000) return "刚刚阅读";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前阅读`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前阅读`;
+    return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
       {toast && (
@@ -100,7 +216,14 @@ export default function NewsDetail() {
         className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col detail-enter border border-gray-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-4 py-3 rounded-t-lg">
+        <div className="h-1 bg-gray-100 rounded-t-lg overflow-hidden">
+          <div
+            className={`h-full transition-all duration-150 ease-out ${progressColor}`}
+            style={{ width: `${readingProgress}%` }}
+          />
+        </div>
+
+        <div className="flex items-center border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-4 py-3">
           <button
             onClick={closeNewsDetail}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
@@ -117,9 +240,33 @@ export default function NewsDetail() {
                 {category?.name}
               </span>
             )}
+            <span
+              className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border ${
+                isRead
+                  ? "text-green-600 bg-green-50 border-green-200"
+                  : "text-orange-600 bg-orange-50 border-orange-200"
+              }`}
+            >
+              <Eye size={10} className="mr-0.5" />
+              {isRead ? "已读" : "未读"}
+            </span>
+            <span className="inline-flex items-center text-[11px] text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200">
+              进度 {Math.round(readingProgress)}%
+            </span>
           </div>
 
           <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={handleToggleReadStatus}
+              className={`p-2 rounded-md transition-colors ${
+                isRead
+                  ? "text-green-600 bg-green-50 hover:bg-green-100"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              }`}
+              title={isRead ? "标记为未读" : "标记为已读"}
+            >
+              {isRead ? <Check size={17} /> : <RefreshCw size={17} />}
+            </button>
             <button
               onClick={handleBookmark}
               className={`p-2 rounded-md transition-colors ${
@@ -148,7 +295,10 @@ export default function NewsDetail() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto px-8 py-6 scroll-smooth"
+        >
           <div className="max-w-3xl mx-auto">
             <h1 className="text-[24px] font-bold text-gray-900 leading-tight mb-4">
               {news.title}
@@ -171,6 +321,12 @@ export default function NewsDetail() {
                 <Flame size={14} />
                 <span>热度 {news.hot.toLocaleString()}</span>
               </div>
+              {isRead && readStatus?.readAt && (
+                <div className="flex items-center gap-1.5 text-green-600">
+                  <Check size={13} />
+                  <span>{formatReadAt(readStatus.readAt)}</span>
+                </div>
+              )}
             </div>
 
             <div className="bg-gradient-to-r from-gray-50 to-white border-l-4 border-excel-green rounded-r-lg p-4 mb-6">
@@ -263,11 +419,17 @@ export default function NewsDetail() {
         </div>
 
         <div className="border-t border-gray-200 bg-gray-50 px-6 py-2.5 rounded-b-lg flex items-center justify-between">
-          <div className="text-[11.5px] text-gray-500">
-            提示：按 Esc 键可快速返回列表，按 Ctrl+H 切换伪装模式
+          <div className="text-[11.5px] text-gray-500 flex items-center gap-3">
+            <span>阅读进度：{Math.round(readingProgress)}%</span>
+            <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${progressColor}`}
+                style={{ width: `${readingProgress}%` }}
+              />
+            </div>
           </div>
           <div className="text-[11px] text-gray-400">
-            内容仅供娱乐，数据为模拟演示
+            提示：按 Esc 键可快速返回列表，按 Ctrl+H 切换伪装模式
           </div>
         </div>
       </div>

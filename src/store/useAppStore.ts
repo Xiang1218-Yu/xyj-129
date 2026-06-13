@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { AppState, CellNote, NoteTag, CamouflageMode } from "@/types";
+import { AppState, CellNote, NoteTag, CamouflageMode, NewsReadStatus } from "@/types";
 import { categories, getNextCategory, getPrevCategory } from "@/data/categories";
 import { newsData } from "@/data/newsData";
 import { workTaskTemplates, getWorkTemplateById } from "@/data/camouflageData";
@@ -53,6 +53,12 @@ interface AppStore extends AppState {
   deleteCellNote: (row: number, col: string) => void;
   hasCellNote: (row: number, col: string) => boolean;
   getPendingTodosCount: (row: number, col: string) => number;
+  markNewsAsRead: (newsId: number) => void;
+  markNewsAsUnread: (newsId: number) => void;
+  updateNewsReadProgress: (newsId: number, progress: number) => void;
+  getNewsReadStatus: (newsId: number) => NewsReadStatus | null;
+  markAllNewsAsRead: () => void;
+  clearAllReadStatus: () => void;
 }
 
 const initLikeCount: Record<number, number> = {};
@@ -65,11 +71,14 @@ newsData.forEach((n) => {
 export const useAppStore = create<AppStore>((set, get) => {
   let savedTemplateId = workTaskTemplates[0]?.id || "daily-task";
   let savedWorkCellValues: Record<string, Record<string, string>> = {};
+  let savedNewsReadStatus: Record<number, NewsReadStatus> = {};
   try {
     const tplId = localStorage.getItem("activeWorkTemplateId");
     if (tplId) savedTemplateId = tplId;
     const saved = localStorage.getItem("workTemplateCellValues");
     if (saved) savedWorkCellValues = JSON.parse(saved);
+    const savedRead = localStorage.getItem("newsReadStatus");
+    if (savedRead) savedNewsReadStatus = JSON.parse(savedRead);
   } catch (e) {
     console.warn("读取缓存失败:", e);
   }
@@ -94,6 +103,7 @@ export const useAppStore = create<AppStore>((set, get) => {
   activeWorkTemplateId: savedTemplateId,
   workTemplateCellValues: savedWorkCellValues,
   showTemplateSelector: false,
+  newsReadStatus: savedNewsReadStatus,
 
   setActiveSheet: (sheet) => {
     set({ activeSheet: sheet, showDetail: false, selectedNewsId: null });
@@ -442,6 +452,88 @@ export const useAppStore = create<AppStore>((set, get) => {
     const note = get().getCellNote(row, col);
     if (!note) return 0;
     return note.todos.filter((t) => !t.completed).length;
+  },
+
+  markNewsAsRead: (newsId) => {
+    set((state) => {
+      const next: Record<number, NewsReadStatus> = {
+        ...state.newsReadStatus,
+        [newsId]: {
+          read: true,
+          readAt: Date.now(),
+          progress: Math.max(state.newsReadStatus[newsId]?.progress || 0, 100),
+        },
+      };
+      try {
+        localStorage.setItem("newsReadStatus", JSON.stringify(next));
+      } catch (e) {}
+      return { newsReadStatus: next };
+    });
+  },
+
+  markNewsAsUnread: (newsId) => {
+    set((state) => {
+      const next = { ...state.newsReadStatus };
+      delete next[newsId];
+      try {
+        localStorage.setItem("newsReadStatus", JSON.stringify(next));
+      } catch (e) {}
+      return { newsReadStatus: next };
+    });
+  },
+
+  updateNewsReadProgress: (newsId, progress) => {
+    set((state) => {
+      const existing = state.newsReadStatus[newsId] || {
+        read: false,
+        readAt: 0,
+        progress: 0,
+      };
+      const clamped = Math.max(0, Math.min(100, Math.round(progress)));
+      const isNowRead = existing.read || clamped >= 80;
+      const next: Record<number, NewsReadStatus> = {
+        ...state.newsReadStatus,
+        [newsId]: {
+          read: isNowRead,
+          readAt: isNowRead && !existing.read ? Date.now() : existing.readAt,
+          progress: clamped,
+        },
+      };
+      try {
+        localStorage.setItem("newsReadStatus", JSON.stringify(next));
+      } catch (e) {}
+      return { newsReadStatus: next };
+    });
+  },
+
+  getNewsReadStatus: (newsId) => {
+    return get().newsReadStatus[newsId] || null;
+  },
+
+  markAllNewsAsRead: () => {
+    set(() => {
+      const next: Record<number, NewsReadStatus> = {};
+      newsData.forEach((n) => {
+        next[n.id] = {
+          read: true,
+          readAt: Date.now(),
+          progress: 100,
+        };
+      });
+      try {
+        localStorage.setItem("newsReadStatus", JSON.stringify(next));
+      } catch (e) {}
+      return { newsReadStatus: next };
+    });
+  },
+
+  clearAllReadStatus: () => {
+    set(() => {
+      try {
+        localStorage.removeItem("newsReadStatus");
+      } catch (e) {}
+      return { newsReadStatus: {} };
+    });
   },
   };
 });
