@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ArrowLeft,
   X,
@@ -9,14 +10,31 @@ import {
   Newspaper,
   ThumbsUp,
   MessageSquare,
+  Send,
+  Check,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { getNewsById, formatHotNumber } from "@/data/newsData";
+import { getNewsById } from "@/data/newsData";
 import { categories } from "@/data/categories";
 
 export default function NewsDetail() {
-  const { showDetail, selectedNewsId, closeNewsDetail, activeSheet } =
-    useAppStore();
+  const {
+    showDetail,
+    selectedNewsId,
+    closeNewsDetail,
+    activeSheet,
+    likedNews,
+    newsLikeCount,
+    newsCommentCount,
+    commentInputVisible,
+    toggleLikeNews,
+    toggleCommentInput,
+    addComment,
+  } = useAppStore();
+
+  const [commentText, setCommentText] = useState("");
+  const [bookmarked, setBookmarked] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   if (!showDetail || !selectedNewsId) return null;
 
@@ -26,8 +44,58 @@ export default function NewsDetail() {
   const category = categories.find((c) => c.id === news.category);
   const isCurrentCategory = activeSheet === news.category;
 
+  const isLiked = likedNews[news.id];
+  const likeCount = newsLikeCount[news.id] || 0;
+  const commentCount = newsCommentCount[news.id] || 0;
+  const showCommentInput = commentInputVisible[news.id];
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 1800);
+  };
+
+  const handleLike = () => {
+    toggleLikeNews(news.id);
+    showToast(isLiked ? "已取消点赞" : "点赞成功 ♥");
+  };
+
+  const handleCommentToggle = () => {
+    if (!showCommentInput) {
+      setCommentText("");
+    }
+    toggleCommentInput(news.id);
+  };
+
+  const handleSubmitComment = () => {
+    if (!commentText.trim()) {
+      showToast("请输入评论内容");
+      return;
+    }
+    addComment(news.id);
+    setCommentText("");
+    showToast("评论发表成功");
+  };
+
+  const handleBookmark = () => {
+    setBookmarked(!bookmarked);
+    showToast(!bookmarked ? "已加入收藏" : "已取消收藏");
+  };
+
+  const handleShare = () => {
+    showToast("分享链接已复制到剪贴板");
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href).catch(() => {});
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
+      {toast && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[60] bg-gray-900/90 text-white px-5 py-2 rounded-full text-[13px] shadow-lg detail-enter">
+          {toast}
+        </div>
+      )}
+
       <div
         className="bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col detail-enter border border-gray-300"
         onClick={(e) => e.stopPropagation()}
@@ -52,10 +120,22 @@ export default function NewsDetail() {
           </div>
 
           <div className="ml-auto flex items-center gap-1">
-            <button className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors" title="收藏">
-              <Bookmark size={17} />
+            <button
+              onClick={handleBookmark}
+              className={`p-2 rounded-md transition-colors ${
+                bookmarked
+                  ? "text-excel-green bg-excel-green/10"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              }`}
+              title={bookmarked ? "取消收藏" : "收藏"}
+            >
+              <Bookmark size={17} fill={bookmarked ? "currentColor" : "none"} />
             </button>
-            <button className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors" title="分享">
+            <button
+              onClick={handleShare}
+              className="p-2 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="分享"
+            >
               <Share2 size={17} />
             </button>
             <button
@@ -89,7 +169,7 @@ export default function NewsDetail() {
               </div>
               <div className="flex items-center gap-1.5 text-red-500 font-medium">
                 <Flame size={14} />
-                <span>热度 {formatHotNumber(news.hot)}</span>
+                <span>热度 {news.hot.toLocaleString()}</span>
               </div>
             </div>
 
@@ -107,16 +187,68 @@ export default function NewsDetail() {
               dangerouslySetInnerHTML={{ __html: news.content }}
             />
 
+            {showCommentInput && (
+              <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="text-[13px] font-semibold text-gray-700 mb-2">
+                  发表评论：
+                </div>
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="说说你的看法..."
+                  className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md text-[13px] outline-none focus:border-excel-green focus:ring-1 focus:ring-excel-green/30 resize-none"
+                  onKeyDown={(e) => {
+                    if (e.ctrlKey && e.key === "Enter") {
+                      handleSubmitComment();
+                    }
+                  }}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <div className="text-[11px] text-gray-400">Ctrl+Enter 快速发表</div>
+                  <button
+                    onClick={handleSubmitComment}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-excel-green text-white text-[12.5px] hover:bg-excel-greenDark transition-colors"
+                  >
+                    <Send size={13} />
+                    发表评论
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-10 pt-6 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-red-50 to-orange-50 text-[13px] text-red-600 border border-red-200 hover:from-red-100 hover:to-orange-100 transition-colors">
-                    <ThumbsUp size={15} />
-                    有道理 ({Math.floor(news.hot / 1000)})
+                  <button
+                    onClick={handleLike}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-[13px] transition-colors ${
+                      isLiked
+                        ? "bg-gradient-to-r from-red-100 to-orange-100 text-red-600 border-red-300"
+                        : "bg-gradient-to-r from-red-50 to-orange-50 text-red-600 border-red-200 hover:from-red-100 hover:to-orange-100"
+                    }`}
+                  >
+                    {isLiked ? (
+                      <>
+                        <Check size={15} />
+                        已点赞 ({likeCount.toLocaleString()})
+                      </>
+                    ) : (
+                      <>
+                        <ThumbsUp size={15} />
+                        有道理 ({likeCount.toLocaleString()})
+                      </>
+                    )}
                   </button>
-                  <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-gray-50 text-[13px] text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors">
+                  <button
+                    onClick={handleCommentToggle}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full border text-[13px] transition-colors ${
+                      showCommentInput
+                        ? "bg-excel-green/10 text-excel-green border-excel-green/40"
+                        : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
                     <MessageSquare size={15} />
-                    评论 ({Math.floor(news.hot / 5000)})
+                    评论 ({commentCount.toLocaleString()})
                   </button>
                 </div>
                 <button

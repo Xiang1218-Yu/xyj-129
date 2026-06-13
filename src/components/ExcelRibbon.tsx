@@ -29,6 +29,23 @@ import {
   ZoomIn,
   Type,
   Palette,
+  CheckCheck,
+  MessageSquareText,
+  PencilLine,
+  Eraser,
+  EyeOff,
+  Lock,
+  Unlock,
+  FileText,
+  Languages,
+  StickyNote,
+  CircleDot,
+  ArrowRightLeft,
+  Ruler,
+  Square as SquareIcon,
+  LayoutGrid,
+  Columns,
+  AlignVerticalSpaceBetween,
 } from "lucide-react";
 
 const tabs = ["文件", "开始", "插入", "页面布局", "公式", "数据", "审阅", "视图"];
@@ -291,9 +308,167 @@ export default function ExcelRibbon() {
         </div>
       )}
 
-      {["文件", "页面布局", "审阅"].includes(activeTab) && (
-        <div className="flex-1 bg-white border-b border-gray-200 px-2 py-1 flex items-center justify-center">
-          <span className="text-gray-400 text-sm">「{activeTab}」选项卡功能区</span>
+      {activeTab === "页面布局" && (
+        <div className="flex-1 bg-white border-b border-gray-200 px-2 py-1 flex items-start gap-1 overflow-x-auto">
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">主题</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <Palette size={22} className="text-purple-500" />
+                <span className="text-[11px] mt-0.5">主题</span>
+              </div>
+              <div className="ribbon-btn">
+                <FileText size={22} className="text-blue-500" />
+                <span className="text-[11px] mt-0.5">颜色</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">页面设置</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <SquareIcon size={22} className="text-gray-600" />
+                <span className="text-[11px] mt-0.5">纸张大小</span>
+              </div>
+              <div className="ribbon-btn">
+                <ArrowRightLeft size={22} className="text-gray-600" />
+                <span className="text-[11px] mt-0.5">纸张方向</span>
+              </div>
+              <div className="ribbon-btn">
+                <Ruler size={22} className="text-gray-600" />
+                <span className="text-[11px] mt-0.5">页边距</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">调整为合适大小</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <LayoutGrid size={22} className="text-orange-500" />
+                <span className="text-[11px] mt-0.5">缩放</span>
+              </div>
+              <div className="ribbon-btn">
+                <Columns size={22} className="text-green-600" />
+                <span className="text-[11px] mt-0.5">宽度</span>
+              </div>
+              <div className="ribbon-btn">
+                <AlignVerticalSpaceBetween size={22} className="text-blue-500" />
+                <span className="text-[11px] mt-0.5">高度</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">工作表选项</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <Eye size={22} className="text-excel-green" />
+                <span className="text-[11px] mt-0.5">网格线</span>
+              </div>
+              <div className="ribbon-btn">
+                <CircleDot size={22} className="text-gray-600" />
+                <span className="text-[11px] mt-0.5">标题</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "审阅" && (
+        <div className="flex-1 bg-white border-b border-gray-200 px-2 py-1 flex items-start gap-1 overflow-x-auto">
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">校对</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <CheckCheck size={22} className="text-blue-500" />
+                <span className="text-[11px] mt-0.5">拼写检查</span>
+              </div>
+              <div className="ribbon-btn">
+                <Languages size={22} className="text-green-600" />
+                <span className="text-[11px] mt-0.5">翻译</span>
+              </div>
+              <div className="ribbon-btn">
+                <FileText size={22} className="text-gray-600" />
+                <span className="text-[11px] mt-0.5">同义词库</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">批注</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <StickyNote size={22} className="text-yellow-500" />
+                <span className="text-[11px] mt-0.5">新建批注</span>
+              </div>
+              <div className="ribbon-btn">
+                <PencilLine size={22} className="text-blue-500" />
+                <span className="text-[11px] mt-0.5">编辑批注</span>
+              </div>
+              <div className="ribbon-btn">
+                <Eraser size={22} className="text-red-500" />
+                <span className="text-[11px] mt-0.5">删除批注</span>
+              </div>
+              <div className="ribbon-btn">
+                <MessageSquareText size={22} className="text-purple-500" />
+                <span className="text-[11px] mt-0.5">显示批注</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">更改</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <EyeOff size={22} className="text-orange-500" />
+                <span className="text-[11px] mt-0.5">跟踪修订</span>
+              </div>
+              <div className="ribbon-btn">
+                <CheckCheck size={22} className="text-green-600" />
+                <span className="text-[11px] mt-0.5">接受修订</span>
+              </div>
+              <div className="ribbon-btn">
+                <Eraser size={22} className="text-red-500" />
+                <span className="text-[11px] mt-0.5">拒绝修订</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">保护</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <Lock size={22} className="text-red-600" />
+                <span className="text-[11px] mt-0.5">保护工作表</span>
+              </div>
+              <div className="ribbon-btn">
+                <Unlock size={22} className="text-green-600" />
+                <span className="text-[11px] mt-0.5">撤销保护</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "文件" && (
+        <div className="flex-1 bg-white border-b border-gray-200 px-2 py-1 flex items-start gap-1 overflow-x-auto">
+          <div className="flex flex-col items-center border-r border-gray-200 px-2 h-full">
+            <div className="text-[11px] text-gray-500 mb-1">常用命令</div>
+            <div className="flex gap-1">
+              <div className="ribbon-btn">
+                <FileText size={22} className="text-excel-green" />
+                <span className="text-[11px] mt-0.5">信息</span>
+              </div>
+              <div className="ribbon-btn">
+                <SquareIcon size={22} className="text-blue-500" />
+                <span className="text-[11px] mt-0.5">新建</span>
+              </div>
+              <div className="ribbon-btn">
+                <BarChart3 size={22} className="text-orange-500" />
+                <span className="text-[11px] mt-0.5">打开</span>
+              </div>
+              <div className="ribbon-btn">
+                <Printer size={22} className="text-gray-600" />
+                <span className="text-[11px] mt-0.5">打印</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

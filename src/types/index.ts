@@ -23,6 +23,11 @@ export interface AppState {
   selectedNewsId: number | null;
   selectedCell: { row: number; col: string } | null;
   formulaBarValue: string;
+  cellValues: Record<string, string>;
+  likedNews: Record<number, boolean>;
+  newsLikeCount: Record<number, number>;
+  newsCommentCount: Record<number, number>;
+  commentInputVisible: Record<number, boolean>;
 }
 
 export interface CamouflageRow {
