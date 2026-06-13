@@ -109,3 +109,18 @@ export interface NotesState {
   notePanelCell: { row: number; col: string } | null;
   allTags: NoteTag[];
 }
+
+export interface OfficePhrase {
+  id: string;
+  title: string;
+  content: string;
+  tags?: string[];
+}
+
+export interface OfficePhraseCategory {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  phrases: OfficePhrase[];
+}

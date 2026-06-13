@@ -5,6 +5,7 @@ import NewsList from "@/components/NewsList";
 import CamouflageMode from "@/components/CamouflageMode";
 import NewsDetail from "@/components/NewsDetail";
 import NotePanel from "@/components/NotePanel";
+import OfficeAssistant from "@/components/OfficeAssistant";
 
 export default function Spreadsheet() {
   const {
@@ -143,8 +144,10 @@ export default function Spreadsheet() {
   }
 
   const showHelp = activeSheet === "help";
-  const helpEndCol = showHelp ? colLabels[colCount - 1] : "E";
-  const newsStartCol = showHelp ? null : "F";
+  const showOffice = activeSheet === "office";
+  const showFullPanel = showHelp || showOffice;
+  const helpEndCol = showFullPanel ? colLabels[colCount - 1] : "E";
+  const newsStartCol = showFullPanel ? null : "F";
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col bg-white">
@@ -220,7 +223,7 @@ export default function Spreadsheet() {
                       const value = cellValues[cellKey] || "";
 
                       const isHelpArea =
-                        !showHelp &&
+                        !showFullPanel &&
                         (col === "B" || col === "C" || col === "D" || col === "E") &&
                         rowNum >= 1 && rowNum <= 50;
                       const isNewsArea =
@@ -228,7 +231,7 @@ export default function Spreadsheet() {
                         colLabels.indexOf(col) >= colLabels.indexOf(newsStartCol) &&
                         rowNum >= 1 && rowNum <= 60;
                       const isFullHelpArea =
-                        showHelp && rowNum >= 1 && rowNum <= 70;
+                        showFullPanel && rowNum >= 1 && rowNum <= 70;
 
                       const showOverlay =
                         isHelpArea || isNewsArea || isFullHelpArea;
@@ -318,7 +321,7 @@ export default function Spreadsheet() {
                               {(isHelpArea && col === "B" && rowNum === 1) ||
                               (isFullHelpArea && col === "B" && rowNum === 1) ? (
                                 <div className="h-full w-full border-r border-gray-300 bg-white">
-                                  <HelpPanel />
+                                  {showOffice ? <OfficeAssistant /> : <HelpPanel />}
                                 </div>
                               ) : null}
                               {isNewsArea && col === newsStartCol && rowNum === 1 ? (
